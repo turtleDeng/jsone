@@ -140,13 +140,17 @@ object(<<$}, Bin/binary>>, Nexts, Buf, Opt) -> next(Bin, make_object([], Opt), N
 object(<<Bin/binary>>, Nexts, Buf, Opt)     -> object_key(Bin, [], Nexts, Buf, Opt).
 
 -spec object_key(binary(), jsone:json_object_members(), [next()], binary(), opt()) -> decode_result().
-object_key(<<$", Bin/binary>>, Members, Nexts, Buf, Opt) -> string(Bin, byte_size(Buf), [{object_value, Members} | Nexts], Buf, Opt);
+object_key(<<$", Bin/binary>>, Members, Nexts, Buf, Opt) ->
+    string(Bin, byte_size(Buf), [{object_value, Members} | Nexts], Buf, Opt);
+object_key(<<Bin0:1/binary, Bin/binary>>, Members, Nexts, Buf, Opt) ->
+    Bin1 = jsone:encode(Bin0),
+    object_key(<<Bin1/binary, Bin/binary>>, Members, Nexts, Buf, Opt);
 object_key(<<Bin/binary>>, Members, Nexts, Buf, Opt)     -> ?ERROR(object_key, [Bin, Members, Nexts, Buf, Opt]).
 
 -spec object_value(binary(), jsone:json_string(), jsone:json_object_members(), [next()], binary(), opt()) -> decode_result().
 object_value(<<$:, Bin/binary>>, Key, Members, Nexts, Buf, Opt) ->
     whitespace(Bin, value, [{object_next, object_key(Key, Opt), Members} | Nexts], Buf, Opt);
-object_value(Bin,                Key, Members, Nexts, Buf, Opt) -> ?ERROR(object_value, [Bin, Key, Members, Nexts, Buf, Opt]).
+object_value(Bin, Key, Members, Nexts, Buf, Opt) -> ?ERROR(object_value, [Bin, Key, Members, Nexts, Buf, Opt]).
 
 -compile({inline, [object_key/2]}).
 object_key(Key, ?OPT{keys = binary}) -> Key;
