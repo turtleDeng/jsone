@@ -25,7 +25,7 @@
 %%% THE SOFTWARE.
 %%%
 %%%---------------------------------------------------------------------------------------
--module(jsone_encode).
+-module(jsonr_encode).
 
 -ifdef(ENABLE_HIPE).
 -compile([native, {hipe, [o3]}]).
@@ -55,18 +55,18 @@
 -define(ENCODE_MAP(Value, Nexts, Buf, Opt), object(maps:to_list(Value), Nexts, Buf, Opt)).
 -endif.
 
--type encode_result() :: {ok, binary()} | {error, {Reason::term(), [jsone:stack_item()]}}.
--type next() :: {array_values, [jsone:json_value()]}
-              | {object_value, jsone:json_value(), jsone:json_object_members()}
-              | {object_members, jsone:json_object_members()}
+-type encode_result() :: {ok, binary()} | {error, {Reason::term(), [jsonr:stack_item()]}}.
+-type next() :: {array_values, [jsonr:json_value()]}
+              | {object_value, jsonr:json_value(), jsonr:json_object_members()}
+              | {object_members, jsonr:json_object_members()}
               | {char, binary()}.
 
 -record(encode_opt_v2, {
           native_utf8 = false :: boolean(),
           native_forward_slash = false :: boolean(),
           canonical_form = false :: boolean(),
-          float_format = [{scientific, 20}] :: [jsone:float_format_option()],
-          datetime_format = {iso8601, 0} :: {jsone:datetime_format(), jsone:utc_offset_seconds()},
+          float_format = [{scientific, 20}] :: [jsonr:float_format_option()],
+          datetime_format = {iso8601, 0} :: {jsonr:datetime_format(), jsonr:utc_offset_seconds()},
           object_key_type = string :: string | scalar | value,
           space = 0 :: non_neg_integer(),
           indent = 0 :: non_neg_integer(),
@@ -78,11 +78,11 @@
 %%--------------------------------------------------------------------------------
 %% Exported Functions
 %%--------------------------------------------------------------------------------
--spec encode(jsone:json_value()) -> encode_result().
+-spec encode(jsonr:json_value()) -> encode_result().
 encode(Value) ->
     encode(Value, []).
 
--spec encode(jsone:json_value(), [jsone:encode_option()]) -> encode_result().
+-spec encode(jsonr:json_value(), [jsonr:encode_option()]) -> encode_result().
 encode(Value, Options) ->
     Opt = parse_options(Options),
     value(Value, [], <<"">>, Opt).
@@ -110,7 +110,7 @@ next(Level = [Next | Nexts], Buf, Opt) ->
             next(Nexts, <<Buf/binary, C>>, Opt)
     end.
 
--spec value(jsone:json_value(), [next()], binary(), opt()) -> encode_result().
+-spec value(jsonr:json_value(), [next()], binary(), opt()) -> encode_result().
 value(null, Nexts, Buf, Opt)                         -> next(Nexts, <<Buf/binary, "null">>, Opt);
 value(undefined, Nexts, Buf, Opt = ?OPT{undefined_as_null = true}) -> next(Nexts, <<Buf/binary, "null">>, Opt);
 value(false, Nexts, Buf, Opt)                        -> next(Nexts, <<Buf/binary, "false">>, Opt);
@@ -144,7 +144,7 @@ value(Value, Nexts, Buf, Opt) when ?IS_MAP(Value)    -> ?ENCODE_MAP(Value, Nexts
 value(Value, Nexts, Buf, Opt) when is_list(Value)    -> array(Value, Nexts, Buf, Opt);
 value(Value, Nexts, Buf, Opt)                        -> ?ERROR(value, [Value, Nexts, Buf, Opt]).
 
--spec string(jsone:json_string(), [next()], binary(), opt()) -> encode_result().
+-spec string(jsonr:json_string(), [next()], binary(), opt()) -> encode_result().
 string(<<Str/binary>>, Nexts, Buf, Opt) ->
     escape_string(Str, Nexts, <<Buf/binary, $">>, Opt);
 string(Str, Nexts, Buf, Opt) ->
@@ -201,7 +201,7 @@ format_tz_(S) ->
     M = S1 div ?SECONDS_PER_MINUTE,
     [format2digit(H), $:, format2digit(M)].
 
--spec object_key(jsone:json_value(), [next()], binary(), opt()) -> encode_result().
+-spec object_key(jsonr:json_value(), [next()], binary(), opt()) -> encode_result().
 object_key(Key, Nexts, Buf, Opt) when ?IS_STR(Key) ->
     string(Key, Nexts, Buf, Opt);
 object_key(Key, Nexts, Buf, Opt = ?OPT{object_key_type = scalar}) when is_number(Key) ->
@@ -302,26 +302,26 @@ hex(X) ->
      16#6638, 16#6639, 16#6661, 16#6662, 16#6663, 16#6664, 16#6665, 16#6666}
           ).
 
--spec array(jsone:json_array(), [next()], binary(), opt()) -> encode_result().
+-spec array(jsonr:json_array(), [next()], binary(), opt()) -> encode_result().
 array(List, Nexts, Buf, Opt) ->
     array_values(List, Nexts, pp_newline(<<Buf/binary, $[>>, Nexts, 1, Opt), Opt).
 
--spec array_values(jsone:json_array(), [next()], binary(), opt()) -> encode_result().
+-spec array_values(jsonr:json_array(), [next()], binary(), opt()) -> encode_result().
 array_values([],       Nexts, Buf, Opt) -> next(Nexts, <<(pp_newline(Buf, Nexts, Opt))/binary, $]>>, Opt);
 array_values([X | Xs], Nexts, Buf, Opt) -> value(X, [{array_values, Xs} | Nexts], Buf, Opt).
 
--spec object(jsone:json_object_members(), [next()], binary(), opt()) -> encode_result().
+-spec object(jsonr:json_object_members(), [next()], binary(), opt()) -> encode_result().
 object(Members, Nexts, Buf, ?OPT{canonical_form = true}=Opt) ->
   object_members(lists:sort(Members), Nexts, pp_newline(<<Buf/binary, ${>>, Nexts, 1, Opt), Opt);
 object(Members, Nexts, Buf, Opt) ->
     object_members(Members, Nexts, pp_newline(<<Buf/binary, ${>>, Nexts, 1, Opt), Opt).
 
--spec object_members(jsone:json_object_members(), [next()], binary(), opt()) -> encode_result().
+-spec object_members(jsonr:json_object_members(), [next()], binary(), opt()) -> encode_result().
 object_members([],                  Nexts, Buf, Opt) -> next(Nexts, <<(pp_newline(Buf, Nexts, Opt))/binary, $}>>, Opt);
 object_members([{Key, Value} | Xs], Nexts, Buf, Opt) -> object_key(Key, [{object_value, Value, Xs} | Nexts], Buf, Opt);
 object_members(Arg, Nexts, Buf, Opt)                 -> ?ERROR(object_members, [Arg, Nexts, Buf, Opt]).
 
--spec object_value(jsone:json_value(), jsone:json_object_members(), [next()], binary(), opt()) -> encode_result().
+-spec object_value(jsonr:json_value(), jsonr:json_object_members(), [next()], binary(), opt()) -> encode_result().
 object_value(Value, Members, Nexts, Buf, Opt) ->
     value(Value, [{object_members, Members} | Nexts], Buf, Opt).
 
@@ -351,11 +351,11 @@ padding(Buf, 7) -> <<Buf/binary, "       ">>;
 padding(Buf, 8) -> <<Buf/binary, "        ">>;
 padding(Buf, N) -> padding(<<Buf/binary, "         ">>, N - 9).
 
--spec parse_options([jsone:encode_option()]) -> opt().
+-spec parse_options([jsonr:encode_option()]) -> opt().
 parse_options(Options) ->
     parse_option(Options, ?OPT{}).
 
--spec parse_option([jsone:encode_option()], opt()) -> opt().
+-spec parse_option([jsonr:encode_option()], opt()) -> opt().
 parse_option([], Opt) -> Opt;
 parse_option([native_utf8|T], Opt) ->
     parse_option(T, Opt?OPT{native_utf8=true});
@@ -384,7 +384,7 @@ parse_option([undefined_as_null|T],Opt) ->
 parse_option(List, Opt) ->
     error(badarg, [List, Opt]).
 
--spec local_offset() -> jsone:utc_offset_seconds().
+-spec local_offset() -> jsonr:utc_offset_seconds().
 local_offset() ->
     UTC = {{1970, 1, 2}, {0,0,0}},
     Local = calendar:universal_time_to_local_time({{1970, 1, 2}, {0,0,0}}),

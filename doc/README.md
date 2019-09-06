@@ -1,11 +1,11 @@
 
 
-# The jsone application #
+# The jsonr application #
 
 
 ## Modules ##
 
 
 <table width="100%" border="0" summary="list of modules">
-<tr><td><a href="jsone.md" class="module">jsone</a></td></tr></table>
+<tr><td><a href="jsonr.md" class="module">jsonr</a></td></tr></table>
 

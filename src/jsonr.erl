@@ -24,7 +24,7 @@
 %%% THE SOFTWARE.
 %%%
 %%%---------------------------------------------------------------------------------------
--module(jsone).
+-module(jsonr).
 
 %%--------------------------------------------------------------------------------
 %% Exported API
@@ -94,8 +94,8 @@
 %% <<104,233,108,111>>
 %% 7> jsone:encode({{json_utf8, B}}).
 %% ** exception error: {invalid_json_utf8,<<104>>,<<233,108,111>>}
-%%      in function  jsone_encode:value/4
-%%         called as jsone_encode:value({json_utf8,<<104,233,108,111>>},
+%%      in function  jsonr_encode:value/4
+%%         called as jsonr_encode:value({json_utf8,<<104,233,108,111>>},
 %%                                      [],<<>>,
 %%                                      {encode_opt_v2,false,
 %%                                                     [{scientific,20}],
@@ -301,8 +301,8 @@ decode(Json) ->
 %%
 %% > jsone:decode(<<"wrong json">>, []).
 %% ** exception error: bad argument
-%%     in function  jsone_decode:number_integer_part/4
-%%        called as jsone_decode:number_integer_part(<<"wrong json">>,1,[],<<>>)
+%%     in function  jsonr_decode:number_integer_part/4
+%%        called as jsonr_decode:number_integer_part(<<"wrong json">>,1,[],<<>>)
 %%     in call from jsone:decode/1 (src/jsone.erl, line 71)
 %% '''
 -spec decode(binary(), [decode_option()]) -> json_value().
@@ -327,13 +327,13 @@ try_decode(Json) ->
 %% {ok,[1,2,3],<<" \"next value\"">>}
 %%
 %% > jsone:try_decode(<<"wrong json">>, []).
-%% {error,{badarg,[{jsone_decode,number_integer_part,
+%% {error,{badarg,[{jsonr_decode,number_integer_part,
 %%                               [<<"wrong json">>,1,[],<<>>],
 %%                               [{line,208}]}]}}
 %% '''
 -spec try_decode(binary(), [decode_option()]) -> {ok, json_value(), Remainings::binary()} | {error, {Reason::term(), [stack_item()]}}.
 try_decode(Json, Options) ->
-    jsone_decode:decode(Json, Options).
+    jsonr_decode:decode(Json, Options).
 
 %% @equiv encode(JsonValue, [])
 -spec encode(json_value()) -> binary().
@@ -350,8 +350,8 @@ encode(JsonValue) ->
 %%
 %% > jsone:encode([1, self(), 2]).  % A pid is not a json value
 %% ** exception error: bad argument
-%%      in function  jsone_encode:value/3
-%%         called as jsone_encode:value(<0,34,0>,[{array_values,[2]}],<<"[1,">>)
+%%      in function  jsonr_encode:value/3
+%%         called as jsonr_encode:value(<0,34,0>,[{array_values,[2]}],<<"[1,">>)
 %%      in call from jsone:encode/1 (src/jsone.erl, line 97)
 %% '''
 -spec encode(json_value(), [encode_option()]) -> binary().
@@ -376,10 +376,10 @@ try_encode(JsonValue) ->
 %% {ok,<<"[1,null,2]">>}
 %%
 %% > jsone:try_encode([1, hoge, 2]).  % 'hoge' atom is not a json value
-%% {error,{badarg,[{jsone_encode,value,
+%% {error,{badarg,[{jsonr_encode,value,
 %%                               [hoge,[{array_values,[2]}],<<"[1,">>],
 %%                               [{line,86}]}]}}
 %% '''
 -spec try_encode(json_value(), [encode_option()]) -> {ok, binary()} | {error, {Reason::term(), [stack_item()]}}.
 try_encode(JsonValue, Options) ->
-    jsone_encode:encode(JsonValue, Options).
+    jsonr_encode:encode(JsonValue, Options).
